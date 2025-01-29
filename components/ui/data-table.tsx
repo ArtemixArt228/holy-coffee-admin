@@ -58,6 +58,12 @@ export function DataTable<TData, TValue>({columns, data,}: DataTableProps<TData,
             columnFilters,
             globalFilter,
         },
+        initialState: {
+            pagination: {
+                pageSize: 5,
+            },
+        },
+
     });
 
     return (
