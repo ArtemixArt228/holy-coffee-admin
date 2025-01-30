@@ -103,6 +103,8 @@ export function DataTable<TData, TValue>({columns, data,}: DataTableProps<TData,
 
     });
 
+    console.log(table.getRow('0').original);
+
     return (
         <div>
             {/* Filter Input */}

@@ -3,6 +3,7 @@
 import React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Edit } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { FilterInput } from "./components/filter-input";
@@ -34,18 +35,42 @@ export const columns: ColumnDef<Partial<Reservation>>[] = [
     {
         id: "select",
         header: () => <Edit className="h-4 w-4" />,
-        cell: ({ row, table }) => (
-            <Checkbox
-                checked={row.getIsSelected()}
-                onCheckedChange={(value) => {
-                    // Deselect all rows when selecting a new one
-                    table.toggleAllRowsSelected(false);
-                    row.toggleSelected(!!value);
-                }}
-                aria-label="Select row"
-                className="rounded-full" // Makes checkbox look like radio
-            />
-        ),
+        cell: ({ row, table }) => {
+            const router = useRouter();
+            const searchParams = useSearchParams();
+            const isSelected = row.getIsSelected();
+
+            const handleSelect = (value: boolean) => {
+                // Get the current URL parameters
+                const params = new URLSearchParams(searchParams.toString());
+
+                // Clear existing selections
+                table.toggleAllRowsSelected(false);
+
+                if (value) {
+                    // Add the selected row ID to the URL
+                    params.set("selectedRow", row.original.id);
+                } else {
+                    // Remove the row ID from the URL if unselected
+                    params.delete("selectedRow");
+                }
+
+                // Push the updated URL
+                router.push(`?${params.toString()}`, { scroll: false });
+
+                // Select or deselect the row
+                row.toggleSelected(value);
+            };
+
+            return (
+                <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={handleSelect}
+                    aria-label="Select row"
+                    className="rounded-full" // Makes checkbox look like a radio button
+                />
+            );
+        },
         enableSorting: false,
         enableHiding: false,
     },
@@ -54,7 +79,6 @@ export const columns: ColumnDef<Partial<Reservation>>[] = [
         header: "Ім`я",
         cell: ({ row }) => (
             <FilterInput
-                column="name"
                 value={row.getValue("name")}
                 disabled={!row.getIsSelected()}
             />
@@ -65,7 +89,6 @@ export const columns: ColumnDef<Partial<Reservation>>[] = [
         header: "Прізвище",
         cell: ({ row }) => (
             <FilterInput
-                column="surname"
                 value={row.getValue("surname")}
                 disabled={!row.getIsSelected()}
             />
@@ -76,7 +99,6 @@ export const columns: ColumnDef<Partial<Reservation>>[] = [
         header: "Телефон",
         cell: ({ row }) => (
             <FilterInput
-                column="phone"
                 value={row.getValue("phone")}
                 disabled={!row.getIsSelected()}
             />
