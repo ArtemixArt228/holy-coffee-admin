@@ -2,10 +2,18 @@
 
 import React from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Edit } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { FilterInput } from "./components/filter-input";
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 export type Reservation = {
     id: string;
@@ -24,19 +32,55 @@ export type Reservation = {
 
 export const columns: ColumnDef<Partial<Reservation>>[] = [
     {
+        id: "select",
+        header: () => <Edit className="h-4 w-4" />,
+        cell: ({ row, table }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(value) => {
+                    // Deselect all rows when selecting a new one
+                    table.toggleAllRowsSelected(false);
+                    row.toggleSelected(!!value);
+                }}
+                aria-label="Select row"
+                className="rounded-full" // Makes checkbox look like radio
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
         accessorKey: "name",
         header: "Ім`я",
-        cell: ({ row }) => <FilterInput column="name" value={row.getValue("name")} />,
+        cell: ({ row }) => (
+            <FilterInput
+                column="name"
+                value={row.getValue("name")}
+                disabled={!row.getIsSelected()}
+            />
+        ),
     },
     {
         accessorKey: "surname",
         header: "Прізвище",
-        cell: ({ row }) => <FilterInput column="surname" value={row.getValue("surname")} />,
+        cell: ({ row }) => (
+            <FilterInput
+                column="surname"
+                value={row.getValue("surname")}
+                disabled={!row.getIsSelected()}
+            />
+        ),
     },
     {
         accessorKey: "phone",
         header: "Телефон",
-        cell: ({ row }) => <FilterInput column="phone" value={row.getValue("phone")} />,
+        cell: ({ row }) => (
+            <FilterInput
+                column="phone"
+                value={row.getValue("phone")}
+                disabled={!row.getIsSelected()}
+            />
+        ),
     },
     {
         accessorKey: "date",
@@ -57,5 +101,23 @@ export const columns: ColumnDef<Partial<Reservation>>[] = [
     {
         accessorKey: "payment_status",
         header: "Статус",
+        cell: ({ row }) => {
+            const status = row.getValue("payment_status") as string || "pending";
+
+            return (
+                <Select
+                    defaultValue={status}
+                    disabled={!row.getIsSelected()}
+                >
+                    <SelectTrigger className="w-[100px]">
+                        <SelectValue placeholder="Статус оплати" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="paid">Сплачено 💲</SelectItem>
+                        <SelectItem value="pending">В процесі 👀</SelectItem>
+                    </SelectContent>
+                </Select>
+            );
+        }
     },
 ];

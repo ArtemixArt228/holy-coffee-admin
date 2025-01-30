@@ -1,10 +1,11 @@
+import {format} from "date-fns";
+
 import { createClient } from "@/utils/supabase/server";
 
 import { columns, Reservation } from "@/app/playground-slots/colums";
 
 import { DataTable } from "@/components/ui/data-table";
 import {DatePicker} from "@/components/ui/date-picker";
-import {format} from "date-fns";
 
 async function getData(date?: string): Promise<Reservation[]> {
     const supabase = await createClient();
@@ -49,9 +50,9 @@ export default async function PlaygroundSlots({searchParams,}: {
     const data = mergeSlotsWithReservations(selectedDate, slots, reservations);
 
     return (
-        <div className="container mx-auto py-10 relative">
+        <div className="py-10 mx-14 relative">
             <div className="absolute right-0">
-                <DatePicker/>
+                <DatePicker />
             </div>
             <DataTable columns={columns} data={data} />
         </div>

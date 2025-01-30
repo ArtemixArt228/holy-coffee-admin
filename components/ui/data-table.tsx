@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {Reservation} from "@/app/playground-slots/colums";
+import {createClient} from "@/utils/supabase/client";
 
 
 interface DataTableProps<TData, TValue> {
@@ -35,6 +36,42 @@ export function DataTable<TData, TValue>({columns, data,}: DataTableProps<TData,
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [globalFilter, setGlobalFilter] = React.useState<string>("");
+
+    async function addReservation ()  {
+        const supabase = createClient();
+
+        await supabase
+            .from("reservations")
+            .insert([
+                {
+                    user_id: 123,
+                    username: "johndoe",
+                    name: "John",
+                    surname: "Doe",
+                    phone: "+380123456789",
+                    date: "2025-02-01",
+                    slot: "14:00",
+                    payment_status: "pending",
+                    payment_method: "card",
+                    payment_id: "txn_123456",
+                }
+            ]);
+    }
+
+    async function updateReservation(id: string, updates: Partial<Reservation>) {
+        const supabase = createClient();
+
+        const { data, error } = await supabase
+            .from("reservations") // Table name
+            .update(updates) // Fields to update
+            .eq("id", id); // Find row by ID
+
+        if (error) {
+            console.error("Error updating reservation:", error.message);
+        } else {
+            console.log("Reservation updated:", data);
+        }
+    }
 
     const table = useReactTable({
         data,
@@ -135,6 +172,13 @@ export function DataTable<TData, TValue>({columns, data,}: DataTableProps<TData,
         </div>
             {/* Pagination */}
             <div className="flex items-center justify-end space-x-2 py-4">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addReservation()}
+                >
+                    Add
+                </Button>
                 <Button
                     variant="outline"
                     size="sm"
