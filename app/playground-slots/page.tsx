@@ -38,9 +38,10 @@ function mergeSlotsWithReservations(
 }
 
 export default async function PlaygroundSlots({searchParams,}: {
-    searchParams: { date?: string }
+    searchParams: Promise<{ date?: string }>
 }) {
     const { date } = await searchParams;
+
     const selectedDate = date || format(new Date(), 'yyyy-MM-dd')
 
     const reservations = await getData(selectedDate);
