@@ -10,8 +10,11 @@ import {
     getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
-    useReactTable,
+    useReactTable, RowData,
 } from "@tanstack/react-table";
+import {useSearchParams} from "next/navigation";
+
+import {createClient} from "@/utils/supabase/client";
 
 import {
     Table,
@@ -24,7 +27,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {Reservation} from "@/app/playground-slots/colums";
-import {createClient} from "@/utils/supabase/client";
+import {useLocalStorage} from "@/hooks/use-local-storage";
+import {RESERVATION_KEY} from "@/app/constants/local-storage";
 
 
 interface DataTableProps<TData, TValue> {
@@ -33,44 +37,46 @@ interface DataTableProps<TData, TValue> {
 }
 
 export function DataTable<TData, TValue>({columns, data,}: DataTableProps<TData, TValue>) {
+    const searchParams = useSearchParams();
+
+    const initialPage = Number(searchParams.get("page")) || 0;
+    const selectedRow = Number(searchParams.get("selectedRow")) || 0;
+
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [globalFilter, setGlobalFilter] = React.useState<string>("");
+    const [pagination, setPagination] = React.useState({
+        pageIndex: initialPage,
+        pageSize: 6, // Default page size
+    });
 
-    async function addReservation ()  {
+    const {removeItem, getItem} = useLocalStorage(RESERVATION_KEY);
+
+    React.useEffect(() => {
+        const pageFromParams = Number(searchParams.get("page")) || 0;
+        setPagination((prev) => ({
+            ...prev,
+            pageIndex: pageFromParams,  // Ensure pagination doesn't reset
+        }));
+    }, [searchParams]);
+
+    async function addReservation(reservation: RowData)  {
         const supabase = createClient();
+
+        const data = {...reservation, ...getItem(), user_id: 123456789};
 
         await supabase
             .from("reservations")
-            .insert([
-                {
-                    user_id: 123,
-                    username: "johndoe",
-                    name: "John",
-                    surname: "Doe",
-                    phone: "+380123456789",
-                    date: "2025-02-01",
-                    slot: "14:00",
-                    payment_status: "pending",
-                    payment_method: "card",
-                    payment_id: "txn_123456",
-                }
-            ]);
+            .insert([data]);
     }
 
     async function updateReservation(id: string, updates: Partial<Reservation>) {
         const supabase = createClient();
 
-        const { data, error } = await supabase
+        await supabase
             .from("reservations") // Table name
             .update(updates) // Fields to update
             .eq("id", id); // Find row by ID
-
-        if (error) {
-            console.error("Error updating reservation:", error.message);
-        } else {
-            console.log("Reservation updated:", data);
-        }
     }
 
     const table = useReactTable({
@@ -81,6 +87,7 @@ export function DataTable<TData, TValue>({columns, data,}: DataTableProps<TData,
         onSortingChange: setSorting,
         getSortedRowModel: getSortedRowModel(),
         onColumnFiltersChange: setColumnFilters,
+        onPaginationChange: setPagination,
         getFilteredRowModel: getFilteredRowModel(),
         globalFilterFn: (row, _, filterValue) => {
             const searchTerm = filterValue.toLowerCase();
@@ -92,18 +99,11 @@ export function DataTable<TData, TValue>({columns, data,}: DataTableProps<TData,
         },
         state: {
             sorting,
+            pagination,
             columnFilters,
             globalFilter,
-        },
-        initialState: {
-            pagination: {
-                pageSize: 5,
-            },
-        },
-
+        }
     });
-
-    console.log(table.getRow('0').original);
 
     return (
         <div>
@@ -165,7 +165,7 @@ export function DataTable<TData, TValue>({columns, data,}: DataTableProps<TData,
                                 colSpan={columns.length}
                                 className="h-24 text-center text-sm text-gray-500"
                             >
-                                No results.
+                                Немає результатів ❌
                             </TableCell>
                         </TableRow>
                     )}
@@ -173,31 +173,35 @@ export function DataTable<TData, TValue>({columns, data,}: DataTableProps<TData,
             </Table>
         </div>
             {/* Pagination */}
-            <div className="flex items-center justify-end space-x-2 py-4">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addReservation()}
-                >
-                    Add
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                >
-                    Previous
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                >
-                    Next
-                </Button>
+            <div className="flex justify-between mt-5">
+                {/* Reservation Button */}
+                <div className="flex justify-end">
+                    <Button variant="secondary" size="sm" onClick={() => addReservation(table.getRow(String(selectedRow)).original)}>
+                        Додати
+                    </Button>
+                </div>
+
+                {/* Pagination Controls */}
+                <div className="flex items-center justify-end space-x-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage()}
+                    >
+                        Попередня
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => table.nextPage()}
+                        disabled={!table.getCanNextPage()}
+                    >
+                        Наступна
+                    </Button>
+                </div>
             </div>
+
         </div>
     );
 }

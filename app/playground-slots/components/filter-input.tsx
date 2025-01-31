@@ -1,16 +1,26 @@
 "use client"
 
-import { useState } from "react";
+import {useEffect, useState} from "react";
 
 import { Input } from "@/components/ui/input";
 
+import {useLocalStorage} from "@/hooks/use-local-storage";
+import {RESERVATION_KEY} from "@/app/constants/local-storage";
+
 interface IFilterInputProps {
+    columnName: string;
     disabled: boolean;
     value?: string;
 }
 
-export const FilterInput = ({ disabled, value }: IFilterInputProps) => {
+export const FilterInput = ({ columnName, disabled, value }: IFilterInputProps) => {
     const [inputValue, setInputValue] = useState(value || "");
+
+    const {setItem, getItem} = useLocalStorage(RESERVATION_KEY);
+
+    useEffect(() => {
+        setItem({...getItem(), [`${columnName}`]: inputValue});
+    }, [columnName, getItem, inputValue, setItem]);
 
     return (
         <Input
